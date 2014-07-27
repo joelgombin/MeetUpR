@@ -1,0 +1,121 @@
+---
+title: "Génération automatique de rapports"
+author: "Joël Gombin"
+date: "24/07/2014"
+output:
+  ioslides_presentation:
+    incremental: no
+    keep_md: yes
+    widescreen: yes
+runtime: shiny
+---
+
+```{r echo = FALSE, message=FALSE}
+require(knitr)
+hook_source_def = knit_hooks$get('source')
+knit_hooks$set(source = function(x, options){
+  if (!is.null(options$verbatim) && options$verbatim){
+    opts = gsub(",\\s*verbatim\\s*=\\s*TRUE\\s*", "", options$params.src)
+    bef = sprintf('\n\n    ```{r %s}\n', opts, "\n")
+    stringr::str_c(bef, paste(knitr:::indent_block(x, "    "), collapse = '\n'), "\n    ```\n")
+  } else {
+     hook_source_def(x, options)
+  }
+})
+```
+
+## Pourquoi générer automatiquement des rapports ?
+
+- Dans une logique de recherche : recherche reproductible
+- Documenter ce qu'on a fait
+- Expliquer à d'autres ce qu'on fait
+- Faire du suivi de version
+- Nouvelles données produites de manière récurrente
+- ...
+
+## La logique de base
+
+Combiner :
+
+- un language décrivant le document (HTML, LaTeX...),
+- et du code R, évalué et traduit dans le language décrivant le document.
+
+Ensuite un programme évalue le code R et le traduit (`Sweave`, `knitr`...). Il peut aussi restituer le code R, en le mettant en forme.
+
+## Les possibilités
+
+Historiquement, cette logique a été inventée pour produire du LaTeX (`Sweave`). 
+
+Aujourd'hui, `knitr` peut générer du LaTeX, du HTML, du Markdown, du AsciiDoc et du reStructuredText. 
+
+En utilisant [`pandoc`](http://johnmacfarlane.net/pandoc/), on rajoute toute une série d'autres formats : Word (docx), Open/LibreOffice (odt), slides HTML5 (comme cette présentation !), E-books (e-pub...), du Org-mode, etc. 
+
+## Et concrètement ?
+
+Rstudio facilite considérablement le travail. Il suffit de créer un document RMarkdown pour pouvoir exporter - avec la même source ! - en PDF (LaTeX), HTML, Word. On peut également faire une présentation (HTML5 ou Beamer), et même un document interactif (page HTML ou présentation) !
+
+La syntaxe markdown est minimaliste et très simple.
+
+## Un exemple d'interactivité
+
+```{r, echo=FALSE}
+library(shiny)
+inputPanel(
+  selectInput("n_breaks", label = "Number of bins:",
+              choices = c(10, 20, 35, 50), selected = 20),
+  
+  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
+              min = 0.2, max = 2, value = 1, step = 0.2)
+)
+
+renderPlot({
+  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
+       xlab = "Duration (minutes)", main = "Geyser eruption duration")
+  
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
+})
+```
+
+## La syntaxe des chunks
+
+Un chunk est un bout de code R qui doit être executé. 
+
+Le code peut être "inline", il est alors introduit par :
+
+```{r eval=FALSE}
+ceci est une évaluation de `r 2 + 3`
+```
+
+ceci est une évaluation de `r 2 + 3`
+
+Sinon, un chunk se présente de la manière suivante :
+
+```{r verbatim = TRUE, eval=FALSE, message=FALSE}
+d <- rnorm(1000, 50, 20)
+hist(d)
+
+```
+
+## La syntaxe des chunks
+
+```{r echo=TRUE}
+d <- rnorm(1000, 50, 20)
+hist(d)
+
+```
+
+## Voilà, c'est aussi simple que ça !
+
+Rmarkdown peut aussi gérer : bibliographie et citations, la compilation de notebooks, d'autres styles de présentation, des templates personnalisés, des formats créés ad hoc...
+
+Ah, et au fait : `knitr` peut gérer d'autres languages que R - en théorie, [n'importe lesquels](http://yihui.name/knitr/demo/engines/)  !
+
+## Retrouver le code de cette présentation
+
+Sur [mon github](http://www.github.com/joelgombin/MeetUpR)
+
+Pour en savoir plus : 
+
+- le [site de knitr](http://yihui.name/knitr/)
+- le [site de Rmarkdown](http://rmarkdown.rstudio.com/)
